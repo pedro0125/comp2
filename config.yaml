@@ -6,15 +6,17 @@ COMPETENCIA: 2
     # 3- bayesiana  | test_baye 
     # 4- experimento |  test_exp
     # 5- prediccion_final | test_prediccion_final |
-PROCESO_PPAL: "experimento"
+PROCESO_PPAL: "creacion_target_clase_ternaria"
+#PROCESO_PPAL: "feat_eng"
+#PROCESO_PPAL: "experimento"
 # SUSBAMPLEO EN PORCENTAJE
 SUBSAMPLEO : 0.1 # solo para baye y exp y pred final
 
 
 configuracion_semilla:
  # Completar con la info de las semillas
-  SEMILLA: 773767
-  SEMILLAS: [259621, 282917, 413417, 773767, 290827]
+  SEMILLA: 102191
+  SEMILLAS: [102191, 100043, 130649, 138433, 180379]
 
 configuracion_feat_eng : 
   N_FE : 1
@@ -61,7 +63,7 @@ configuracion_gcp:
 configuracion_paths:
   place_path:
     LOCAL_PATH: ""
-    GCP_PATH: "/home/christian_lombardo14/buckets/b1/"
+    GCP_PATH: "/home/catanop0125/buckets/b1"
   PATH_LOGS: "logs/"
   PATH_LOG_GLOBAL : "global_log/"
 
