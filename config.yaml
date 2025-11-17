@@ -63,7 +63,7 @@ configuracion_gcp:
 configuracion_paths:
   place_path:
     LOCAL_PATH: ""
-    GCP_PATH: "/home/catanop0125/buckets/b1"
+    GCP_PATH: "/home/catanop0125/buckets/b1/"
   PATH_LOGS: "logs/"
   PATH_LOG_GLOBAL : "global_log/"
 
