@@ -9,9 +9,9 @@ COMPETENCIA: 2
 #PROCESO_PPAL: "creacion_target_clase_ternaria"
 #PROCESO_PPAL: "feat_eng"
 #PROCESO_PPAL: "experimento"
-PROCESO_PPAL: "prediccion_final"
+PROCESO_PPAL: "bayesiana"
 # SUSBAMPLEO EN PORCENTAJE
-SUBSAMPLEO : 0.1 # solo para baye y exp y pred final
+SUBSAMPLEO : 1 # solo para baye y exp y pred final
 
 
 configuracion_semilla:
@@ -25,11 +25,11 @@ configuracion_feat_eng :
   ORDEN_LAGS: 3
 
 configuracion_bayesiana:
-  TIPO_BAYESIANA : "ZLGBM" # OB | ZS | ZLGBM
-  N_BAYESIANA: ""
-  N_SEMILLAS_BAY : 1
-  N_TRIALS: 1
-  N_BOOSTS: 1
+  TIPO_BAYESIANA : "OB" # OB | ZS | ZLGBM
+  N_BAYESIANA: "25_a"
+  N_SEMILLAS_BAY : 50
+  N_TRIALS: 50
+  N_BOOSTS: 1000
   MES_VAL_BAYESIANA: 202102
   UMBRAL: 0.025
   GANANCIA: 780000
@@ -51,8 +51,8 @@ configuracion_canaritos:
   EARLY_STOPPING_ROUNDS : 200
 
 configuracion_experimentos:
-  N_EXPERIMENTO :  "01_despues_comp" #"p_zlgbm_13"
-  N_SEMILLAS_EXP : 5
+  N_EXPERIMENTO : "25_a"
+  N_SEMILLAS_EXP : 50
   TOP_MODELS : 1 # ZS =1
   MODEL_EXP : "lgbm" #| "lgbm"
 
