@@ -27,7 +27,7 @@ configuracion_feat_eng :
 configuracion_bayesiana:
   TIPO_BAYESIANA : "OB" # OB | ZS | ZLGBM
   N_BAYESIANA: "25_a"
-  N_SEMILLAS_BAY : 50
+  N_SEMILLAS_BAY : 15
   N_TRIALS: 50
   N_BOOSTS: 1000
   MES_VAL_BAYESIANA: 202102
@@ -52,7 +52,7 @@ configuracion_canaritos:
 
 configuracion_experimentos:
   N_EXPERIMENTO : "25_a"
-  N_SEMILLAS_EXP : 50
+  N_SEMILLAS_EXP : 15
   TOP_MODELS : 1 # ZS =1
   MODEL_EXP : "lgbm" #| "lgbm"
 
