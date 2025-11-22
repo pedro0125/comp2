@@ -105,7 +105,7 @@ def optim_hiperp_binaria(X_train:pd.DataFrame | pl.DataFrame ,y_train_binaria:pd
             'lambda_l1':lambda_l1,
             'lambda_l2':lambda_l2,
             'extra_trees' : True,
-            'verbose': -1
+            'verbose': 0
         }
         train_data = lgb.Dataset(X_train,label=y_train_binaria,weight=w_train)
         val_data = lgb.Dataset(X_val,label=y_val_binaria,weight=w_val)
