@@ -17,7 +17,7 @@ from optuna.visualization import plot_param_importances, plot_contour,  plot_sli
 
 from src.config import GANANCIA,ESTIMULO,SEMILLA ,N_BOOSTS ,N_FOLDS, MES_VAL_BAYESIANA, MES_TRAIN
 from src.config import  path_output_bayesian_db,path_output_bayesian_bestparams ,path_output_bayesian_best_iter ,path_output_bayesian_graf
-
+from collections import Counter
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +142,111 @@ def optim_hiperp_binaria(X_train:pd.DataFrame | pl.DataFrame ,y_train_binaria:pd
     study_name = f"study_{name}"    # VAria en numero de bayesiana y len(semillas)
 
 
+    study = optuna.create_study(
+        direction="maximize",
+        study_name=study_name,
+        storage=storage_name,
+        load_if_exists=True
+        #sampler=TPESampler(seed=SEMILLA)
+    )
+
+    study.optimize(objective, n_trials=n_trials)
+
+    return study
+
+def optim_hiperp_binaria_unbalance(X_train:pd.DataFrame | pl.DataFrame ,y_train_binaria:pd.Series|pl.Series|np.ndarray,w_train:pd.Series|pl.Series|np.ndarray, n_trials:int, name:str,fecha,semillas:list)-> Study:
+    logger.info(f"Comienzo optimizacion hiperp binario unbalance: {name}")
+    if isinstance(X_train, pl.DataFrame):
+        X_train = X_train.to_pandas()
+    if isinstance(y_train_binaria, pl.Series):
+        y_train_binaria = y_train_binaria.to_pandas()
+    if isinstance(w_train, pl.Series):
+        w_train = w_train.to_pandas()
+
+    num_meses = len(MES_TRAIN)
+    f_val = X_train["foto_mes"] == MES_VAL_BAYESIANA
+
+    X_val = X_train.loc[f_val]
+    y_val_binaria = y_train_binaria[X_val.index]
+    w_val = w_train[X_val.index]
+
+    X_train = X_train.loc[~f_val]
+    y_train_binaria = y_train_binaria[X_train.index]
+    w_train = w_train[X_train.index]
+
+    logger.info(f"Meses train en bayesiana : {X_train['foto_mes'].unique()}")
+    logger.info(f"Meses validacion en bayesiana : {X_val['foto_mes'].unique()}")
+
+    counts = Counter(y_train_binaria)
+    scale_pos_weight = counts[0] / counts[1] if counts[1] > 0 else 1
+    logger.info(f"Usando balanceo: scale_pos_weight = {scale_pos_weight:.2f}")
+
+    def objective(trial):
+        num_leaves = trial.suggest_int('num_leaves', 8, 100)
+        learning_rate = trial.suggest_float('learning_rate', 0.003, 0.1) 
+        min_data_in_leaf = trial.suggest_int('min_data_in_leaf', 10, 1600)
+        feature_fraction = trial.suggest_float('feature_fraction', 0.1, 1.0)
+        bagging_fraction = trial.suggest_float('bagging_fraction', 0.1, 1.0)
+        lambda_l1 = trial.suggest_float('lambda_l1', 1e-3, 10.0, log=True)
+        lambda_l2 = trial.suggest_float('lambda_l2', 1e-3, 10.0, log=True)
+        # Agregar maxdepth
+        # Agregar lo de regularizacion
+
+        params = {
+            'objective': 'binary',
+            'metric': 'custom',
+            'is_unbalance': True,
+            'boosting_type': 'gbdt',
+            'first_metric_only': True,
+            'boost_from_average': True,
+            'feature_pre_filter': False,
+            'max_bin': 31,
+            'num_leaves': num_leaves,
+            'learning_rate': learning_rate,
+            'min_data_in_leaf': min_data_in_leaf,
+            'feature_fraction': feature_fraction,
+            'bagging_fraction': bagging_fraction,
+            'bagging_freq': 1 , # 
+            'lambda_l1':lambda_l1,
+            'lambda_l2':lambda_l2,
+            'extra_trees' : True,
+            'verbose': 0
+        }
+        train_data = lgb.Dataset(X_train,label=y_train_binaria,weight=w_train)
+        val_data = lgb.Dataset(X_val,label=y_val_binaria,weight=w_val)
+        y_preds=[]
+        best_iters=[]
+        for semilla in semillas:
+            params['seed'] = semilla
+            model_i = lgb.train(
+                    params=params,
+                    train_set=train_data,
+                    num_boost_round=N_BOOSTS,
+                    valid_sets=[val_data],
+                    valid_names=['valid'],
+                    feval=lgb_gan_eval_individual,
+                    callbacks=[
+                        lgb.early_stopping(stopping_rounds=int(50 + 5/learning_rate), verbose=True),
+                        lgb.log_evaluation(period=200),
+                        ]
+                    )
+            y_pred_i = model_i.predict(X_val,num_iteration=model_i.best_iteration)
+            y_preds.append(y_pred_i)
+            best_iters.append(model_i.best_iteration)
+        y_preds_matrix = np.vstack(y_preds)
+        y_pred_ensamble = np.mean(y_preds_matrix , axis=0)
+        ganancia_media_meseta , cliente_optimo,ganancia_max = lgb_gan_eval_ensamble(y_pred_ensamble , val_data)
+        best_iter_promedio =  np.mean(best_iters)
+
+
+        guardar_iteracion(trial,ganancia_media_meseta,cliente_optimo,ganancia_max,best_iter_promedio,y_preds_matrix,best_iters,name,fecha,semillas)
+
+        return float(ganancia_media_meseta) * num_meses
+        
+    storage_name = "sqlite:///" + path_output_bayesian_db + "optimization_lgbm.db"
+    study_name = f"study_{name}"    # VAria en numero de bayesiana y len(semillas)
+    
+    optuna.logging.set_verbosity(optuna.logging.INFO)
     study = optuna.create_study(
         direction="maximize",
         study_name=study_name,
